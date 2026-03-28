@@ -21,10 +21,10 @@ OWL_BASE = os.path.join(DIR_ONTOLOGY, 'pokemon_base.owl')
 OWL_INFERRED = os.path.join(DIR_ONTOLOGY, 'pokemon_inferred.owl')
 
 
-# La funzione main è la funzione orchestratrice del sistema esperto, coordinando il flusso di lavoro attraverso
+# La funzione main è la funzione orchestratrice del sistema esperto, che coordina il flusso di lavoro attraverso
 # quattro fasi sequenziali. Partendo dalla costruzione dell'ontologia e dall'integrazione della background knowledge,
 # il programma attiva il ragionatore semantico HermiT per dedurre nuovi ruoli tattici e generare un dataset arricchito.
-# Questi dati semantici alimentano sia la fase di apprendimento supervisionato sia il modulo CSP finale, che utilzza le
+# Questi dati semantici alimentano sia la fase di apprendimento supervisionato sia il modulo CSP finale, che utilizza le
 # inferenze logiche ottenute per pianificare e comporre una squadra di Pokémon bilanciata e competitiva.
 def main():
     print("\n" + "=" * 60)

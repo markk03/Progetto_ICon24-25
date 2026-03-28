@@ -10,8 +10,8 @@ def load_dynamic_pool(csv_path):
     df_validi = df.dropna(subset=['smogon_tier', 'inferred_role', 'type1'])
     df_validi = df_validi[df_validi['inferred_role'] != "None"]
 
-    # Peschiamo 80 Pokémon a caso tra tutti i validi
-    # Sanity Check: estraiamo pool finché non ne troviamo uno "promettente" per prevenire l'esplosione combinatoria
+    # Peschiamo 80 Pokémon a caso tra tutti i validi.
+    # Estraiamo pool finché non ne troviamo uno "promettente" per prevenire l'esplosione combinatoria.
     while True:
         pool_dinamico = df_validi.sample(n=80)
 

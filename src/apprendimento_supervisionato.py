@@ -14,7 +14,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-# Funzione che carica il dataset arricchito dal ragionatore semantico e prepara le feature.
+# Funzione che carica il dataset arricchito dal ragionatore semantico e separa le feature in due set.
 def load_datasets(csv_path):
     df = pd.read_csv(csv_path)
     df = df.dropna(subset=['smogon_tier'])
@@ -34,7 +34,8 @@ def load_datasets(csv_path):
     return X_base, X_enriched, y, df_encoded, features_enriched
 
 
-# Funzione che addestra i modelli usando la Nested Cross-Validation.
+# Funzione che esegue la valutazione di RF, SVM e MLP tramite Nested Cross-Validation. Calcola media,
+# deviazione standard e varianza per garantire una stima robusta delle performance.
 def run_ml_evaluation(X, y, phase_title, results_dict, phase_key):
     print(f"\n{phase_title}")
 
@@ -81,7 +82,7 @@ def run_ml_evaluation(X, y, phase_title, results_dict, phase_key):
         results_dict[phase_key][name] = f1_scores.mean()
 
 
-# Funzione che genera i grafici e li salva nella cartella dedicata.
+# Funzione che genera visualizzazioni grafiche per il confronto tra Baseline e OntoBK (F1-Score).
 def generate_plots(results_dict, X_enriched, y, features_enriched, graphics_dir):
     print("\nGenerazione grafici in corso...")
 
