@@ -9,6 +9,7 @@ from sklearn.svm import SVC
 from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import make_scorer, accuracy_score, precision_score, recall_score, f1_score
+from sklearn.model_selection import learning_curve
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -84,8 +85,10 @@ def run_ml_evaluation(X, y, phase_title, results_dict, phase_key):
 
 # Funzione che genera visualizzazioni grafiche per il confronto tra Baseline e OntoBK (F1-Score).
 def generate_plots(results_dict, X_enriched, y, features_enriched, graphics_dir):
-    print("\nGenerazione grafici in corso...")
 
+    print("\nGenerazione grafici di validazione in corso...")
+
+    # GRAFICO COMPARATIVO PERFORMANCE
     modelli_nomi = list(results_dict['Baseline'].keys())
     f1_base = [results_dict['Baseline'][m] for m in modelli_nomi]
     f1_onto = [results_dict['OntoBK'][m] for m in modelli_nomi]
@@ -93,27 +96,68 @@ def generate_plots(results_dict, X_enriched, y, features_enriched, graphics_dir)
     x = np.arange(len(modelli_nomi))
     width = 0.35
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.bar(x - width / 2, f1_base, width, label='Baseline', color='indianred')
-    ax.bar(x + width / 2, f1_onto, width, label='OntoBK', color='mediumseagreen')
+    ax.bar(x - width / 2, f1_base, width, label='Baseline', color='indianred', alpha=0.8)
+    ax.bar(x + width / 2, f1_onto, width, label='OntoBK', color='mediumseagreen', alpha=0.8)
 
     ax.set_ylabel('F1-Score Medio (%)')
-    ax.set_title('Impatto dell\'Ontologia sulle Performance')
+    ax.set_title('Confronto Performance: Impatto della Conoscenza Ontologica')
     ax.set_xticks(x)
     ax.set_xticklabels(modelli_nomi)
     ax.legend(loc='lower right')
     ax.set_ylim(0, 100)
-    plt.savefig(os.path.join(graphics_dir, 'confronto_performance.png'))
-
-    rf = RandomForestClassifier(n_estimators=100, random_state=42)
-    rf.fit(X_enriched, y)
-
-    feat_df = pd.DataFrame({'Feature': features_enriched, 'Importanza': rf.feature_importances_})
-    feat_df = feat_df.sort_values(by='Importanza', ascending=True).tail(10)
-
-    plt.figure(figsize=(10, 6))
-    plt.barh(feat_df['Feature'], feat_df['Importanza'], color='cornflowerblue')
-    plt.title('Top 10 Feature più importanti (Random Forest)')
+    ax.grid(axis='y', linestyle='--', alpha=0.7)
     plt.tight_layout()
-    plt.savefig(os.path.join(graphics_dir, 'feature_importance.png'))
+    plt.savefig(os.path.join(graphics_dir, 'confronto_performance.png'))
+    plt.close()  # Chiudiamo la figura per non sovrapporre i grafici successivi
 
-    print("Grafici salvati nella cartella 'graphics'.")
+    # GENERAZIONE LEARNING CURVES
+    print("  Elaborazione Learning Curves diagnostiche...")
+
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X_enriched)
+
+    models_to_analyze = {
+        "Random Forest": RandomForestClassifier(n_estimators=100, random_state=42),
+        "SVM (Kernel)": SVC(C=1, kernel='rbf', random_state=42),
+        "MLP (Rete Neurale)": MLPClassifier(hidden_layer_sizes=(100,), max_iter=500, random_state=42)
+    }
+
+
+    train_sizes = np.linspace(0.1, 1.0, 5)
+
+    for name, model in models_to_analyze.items():
+        print(f"     Calcolo curva per {name}...")
+
+        # Calcoliamo la learning curve usando F1-macro
+        # cv=5 esegue una cross-validation interna per mediare i risultati
+        train_sizes_abs, train_scores, test_scores = learning_curve(
+            model, X_scaled, y, cv=5, n_jobs=-1, train_sizes=train_sizes, scoring='f1_macro'
+        )
+
+        train_scores_mean = np.mean(train_scores, axis=1)
+        train_scores_std = np.std(train_scores, axis=1)
+        test_scores_mean = np.mean(test_scores, axis=1)
+        test_scores_std = np.std(test_scores, axis=1)
+
+
+        plt.figure(figsize=(8, 5))
+        plt.title(f"Diagnosi Modello: Learning Curve ({name})")
+        plt.xlabel("Campioni di Addestramento")
+        plt.ylabel("F1-Score (Macro)")
+        plt.grid(True, alpha=0.3)
+
+        plt.fill_between(train_sizes_abs, train_scores_mean - train_scores_std,
+                         train_scores_mean + train_scores_std, alpha=0.1, color="firebrick")
+        plt.fill_between(train_sizes_abs, test_scores_mean - test_scores_std,
+                         test_scores_mean + test_scores_std, alpha=0.1, color="forestgreen")
+
+        plt.plot(train_sizes_abs, train_scores_mean, 'o-', color="firebrick", label="Training score")
+        plt.plot(train_sizes_abs, test_scores_mean, 'o-', color="forestgreen", label="Cross-validation score")
+
+        plt.legend(loc="lower right")
+
+        filename = f'learning_curve_{name.replace(" ", "_").lower()}.png'
+        plt.savefig(os.path.join(graphics_dir, filename))
+        plt.close()
+
+    print(f"Operazione completata. Grafici salvati in: '{graphics_dir}'.")
