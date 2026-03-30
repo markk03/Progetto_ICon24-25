@@ -31,20 +31,20 @@ def main():
     print("SISTEMA ESPERTO POKÉMON")
     print("=" * 60)
 
-    # ONTOLOGIA
-    print("\nFASE 1: Costruzione dell'ontologia")
-    ontologia = get_ontology("http://ic.esame.it/pokemon.owl")
-    costruzione_ontologia.build_tbox(ontologia)
-    costruzione_ontologia.init_background_knowledge(ontologia)
-    costruzione_ontologia.populate_abox(ontologia, CSV_BASE)
-    ontologia.save(file=OWL_BASE, format="rdfxml")
-    print(f"File salvato in: {OWL_BASE}")
-
-    # RAGIONATORE SEMANTICO
-    print("\nFASE 2: Ragionamento Semantico (HermiT)")
-    ontologia_inferita = ragionatore_semantico.run_reasoning(OWL_BASE, OWL_INFERRED)
-    if ontologia_inferita:
-        ragionatore_semantico.export_enriched_dataset(ontologia_inferita, CSV_BASE, CSV_ENRICHED)
+    # # ONTOLOGIA
+    # print("\nFASE 1: Costruzione dell'ontologia")
+    # ontologia = get_ontology("http://ic.esame.it/pokemon.owl")
+    # costruzione_ontologia.build_tbox(ontologia)
+    # costruzione_ontologia.init_background_knowledge(ontologia)
+    # costruzione_ontologia.populate_abox(ontologia, CSV_BASE)
+    # ontologia.save(file=OWL_BASE, format="rdfxml")
+    # print(f"File salvato in: {OWL_BASE}")
+    #
+    # # RAGIONATORE SEMANTICO
+    # print("\nFASE 2: Ragionamento Semantico (HermiT)")
+    # ontologia_inferita = ragionatore_semantico.run_reasoning(OWL_BASE, OWL_INFERRED)
+    # if ontologia_inferita:
+    #     ragionatore_semantico.export_enriched_dataset(ontologia_inferita, CSV_BASE, CSV_ENRICHED)
 
     # MACHINE LEARNING
     print("\nFASE 3: Apprendimento Supervisionato")
