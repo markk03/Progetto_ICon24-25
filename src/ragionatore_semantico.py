@@ -3,7 +3,7 @@ from owlready2 import *
 
 
 # Funzione che carica l'ontologia di base e avvia il ragionatore semantico HermiT.
-# Inferisce automaticamente la nuova conoscenza (i ruoli dei Pokémon) e salva i risultati.
+# Inferisce automaticamente la nuova conoscenza e salva i risultati.
 def run_reasoning(input_path, output_path):
     try:
         onto = get_ontology(input_path).load()
@@ -21,7 +21,7 @@ def run_reasoning(input_path, output_path):
 
 
 # Funzione che applica la logica euristica del Sistema Esperto per classificare ogni Pokémon nei tier
-# competitivi (Smogon) incrociando statistiche base, vulnerabilità e ruoli.
+# competitivi incrociando statistiche base, vulnerabilità e ruoli.
 def calculate_smogon_tier(bst, num_debolezze, ruolo):
     if bst >= 600 or (bst >= 550 and num_debolezze <= 1):
         return "Uber"
@@ -35,7 +35,7 @@ def calculate_smogon_tier(bst, num_debolezze, ruolo):
         return "NeverUsed"
 
 
-# Funzione che estrae la conoscenza inferta dall'ontologia (ruoli e vulnerabilità) e la integra nel dataset originale
+# Funzione che estrae la conoscenza inferta dall'ontologia e la integra nel dataset originale
 # per generare la versione arricchita (OntoBK).
 def export_enriched_dataset(onto, csv_source, csv_output):
     df = pd.read_csv(csv_source)

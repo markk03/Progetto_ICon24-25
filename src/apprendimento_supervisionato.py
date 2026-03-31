@@ -14,7 +14,8 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-# CARICAMENTO DATASET
+# Carica il dataset e prepara i due set di feature per la sperimentazione:
+# la configurazione 'Baseline' (solo statistiche base) e quella 'OntoBK', arricchita con i ruoli inferiti dall'ontologia.
 def load_datasets(csv_path):
     df = pd.read_csv(csv_path)
     df = df.dropna(subset=['smogon_tier'])
@@ -32,7 +33,9 @@ def load_datasets(csv_path):
     return X_base, X_enriched, y, df_encoded, features_enriched
 
 
-# 2. VALUTAZIONE MODELLI (Nested Cross-Validation)
+# Esegue la valutazione comparativa dei modelli (k-NN e SVM) utilizzando una Nested Cross-Validation;
+# integra la normalizzazione dei dati, l'ottimizzazione degli iperparametri con GridSearchCV
+# e il calcolo di metriche multi-classe bilanciate.
 def run_ml_evaluation(X, y, phase_title, results_dict, phase_key):
     print(f"\n{phase_title}")
 
@@ -46,7 +49,6 @@ def run_ml_evaluation(X, y, phase_title, results_dict, phase_key):
     inner_cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
     outer_cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
-    # Griglia di iperparametri per i due modelli scelti
     models_and_grids = {
         "k-NN (Instance-based)": (KNeighborsClassifier(), {
             'classifier__n_neighbors': [3, 5, 11],
@@ -62,15 +64,24 @@ def run_ml_evaluation(X, y, phase_title, results_dict, phase_key):
         print(f" Valutazione di {name}...")
         pipeline = Pipeline([('scaler', StandardScaler()), ('classifier', model)])
 
+        # GridSearchCV per la ricerca degli iperparametri nel ciclo interno
         clf = GridSearchCV(estimator=pipeline, param_grid=param_grid, cv=inner_cv, scoring='f1_macro', n_jobs=-1)
-        results = cross_validate(clf, X, y, cv=outer_cv, scoring=scoring, n_jobs=-1)
+
+        # Esecuzione della Cross-Validation esterna con ritorno degli stimatori
+        results = cross_validate(clf, X, y, cv=outer_cv, scoring=scoring, n_jobs=-1, return_estimator=True)
+
+        # Estrazione e stampa dei parametri migliori per ogni fold
+        print(f" Migliori Iperparametri trovati per {name}")
+        for i, estimator in enumerate(results['estimator']):
+            best_p = {k.replace('classifier__', ''): v for k, v in estimator.best_params_.items()}
+            print(f"    Fold {i + 1}: {best_p}")
 
         acc_scores = results['test_accuracy'] * 100
         prec_scores = results['test_precision'] * 100
         rec_scores = results['test_recall'] * 100
         f1_scores = results['test_f1'] * 100
 
-        # Output statistico completo (Media, Std, Varianza)
+        print(f"\n Statistiche Finali")
         print(
             f"    Accuracy:  Media = {acc_scores.mean():.2f}% | Std = {acc_scores.std():.2f}% | Var = {acc_scores.var():.4f}")
         print(
@@ -83,11 +94,12 @@ def run_ml_evaluation(X, y, phase_title, results_dict, phase_key):
         results_dict[phase_key][name] = f1_scores.mean()
 
 
-# GENERAZIONE GRAFICI DIAGNOSTICI
+# Produce la documentazione grafica dei risultati, generando l'istogramma comparativo
+# tra Baseline e OntoBK e le curve di apprendimento.
 def generate_plots(results_dict, X_enriched, y, features_enriched, graphics_dir):
     print("\nGenerazione grafici di validazione in corso...")
 
-    # A. GRAFICO COMPARATIVO (F1-Score)
+    # Grafico comparativo (F1-Score)
     modelli_nomi = list(results_dict['Baseline'].keys())
     f1_base = [results_dict['Baseline'][m] for m in modelli_nomi]
     f1_onto = [results_dict['OntoBK'][m] for m in modelli_nomi]
@@ -106,7 +118,7 @@ def generate_plots(results_dict, X_enriched, y, features_enriched, graphics_dir)
     plt.savefig(os.path.join(graphics_dir, 'confronto_f1_knn_svm.png'))
     plt.close()
 
-    # LEARNING CURVES
+    # Curve di apprendimento
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X_enriched)
 
